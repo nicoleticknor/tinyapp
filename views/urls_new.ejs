@@ -16,6 +16,9 @@
 
     <main style="margin: 1em;">
       <h3>Create TinyURL</h3>
+      <!--action tells the form which url to submit.
+          method tells the form which HTTP method to use when submitting
+          input name="longURL" will add the key longURL to the data sent in the body of the POST request (i.e. the URL the user enters)-->
       <form class="form-inline" action="/urls" method="POST">
         <div class="form-group mb-2">
           <label for="longURL">Enter a URL:</label>

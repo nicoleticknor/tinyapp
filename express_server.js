@@ -41,8 +41,17 @@ app.get('/urls', (req, res) => {
   res.render("urls_index", templateVars);
 })
 
+//adding a GET route to display the new URL creation form when user navigates to /urls/new
+//we have to put this BEFORE the /urls/:shortURL route, because otherwise it will think /new is just an instance of :shortURL!
+app.get('/urls/new', (req, res) => {
+  //telling it to render the code found in the urls_new file
+  //not adding any dynamic variables because we don't need any
+  res.render("urls_new");
+})
+
 app.get('/urls/:shortURL', (req, res) => {
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   //so now we have access to the individual shortURL: longURL KV pair in the instance of the urls_show page this routes to when GET'd
   res.render('urls_show', templateVars);
 })
+
