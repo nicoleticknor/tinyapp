@@ -73,8 +73,19 @@ app.get('/urls/:shortURL', (req, res) => {
 //route for the post request to create a new url
 //the urls_new form has a method that invokes POST with the action "/urls". So this route corresponds with POST on /urls
 app.post('/urls', (req, res) => {
-  console.log(req.body) //log the POST request body to the console, an object with the input name as the key and the user's input as the value. We receive it in this format because of the body-parser module
+  // console.log(req.body) //log the POST request body to the console, an object with the input name as the key and the user's input as the value. We receive it in this format because of the body-parser module
+  //create new shortURL
   const shortURL = generateRandomString();
+  //add a KV pair to the urlDatabase with the shortURL generated and longurl submitted by user in req.body.longURL (so named because of the input name="longURL" in our urls_new page)
   urlDatabase[shortURL] = req.body.longURL;
-  res.redirect(`/urls/${shortURL}`); // temp dummy response
+  res.redirect(`/urls/${shortURL}`); //after submission, user is sent to the new endpoint created for that shortURL that will invoke the app.get('/urls/:shortURL' which renders the 'urls_show' for that shortURL)
 })
+
+//setting up a new app.get to allow users to navigate to the website they've shorted the URL for. going to use /u/ instead of /url/ because that's what the assignment tells me... I think it's because we can't double up on /urls/:shortURL GET methods..?
+//so when we want to add a link to the website, we will internally make the GET request towards /u/:shortURL
+//this was in the template we copied & pasted so  we don't need to implement ourselves, but go check out urls_show.
+app.get('/u/:shortURL', (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  res.redirect(longURL);
+})
+
