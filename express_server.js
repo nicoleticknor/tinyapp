@@ -74,5 +74,7 @@ app.get('/urls/:shortURL', (req, res) => {
 //the urls_new form has a method that invokes POST with the action "/urls". So this route corresponds with POST on /urls
 app.post('/urls', (req, res) => {
   console.log(req.body) //log the POST request body to the console, an object with the input name as the key and the user's input as the value. We receive it in this format because of the body-parser module
-  res.send("Ok"); // temp dummy response
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = req.body.longURL;
+  res.redirect(`/urls/${shortURL}`); // temp dummy response
 })
