@@ -40,3 +40,9 @@ app.get('/urls', (req, res) => {
   //<%= urls %> will render the whole urlDatabase, <%= urls.url %> will render a specific url in a loop context
   res.render("urls_index", templateVars);
 })
+
+app.get('/urls/:shortURL', (req, res) => {
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  //so now we have access to the individual shortURL: longURL KV pair in the instance of the urls_show page this routes to when GET'd
+  res.render('urls_show', templateVars);
+})
