@@ -46,7 +46,8 @@ app.get('/hello', (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 })
 
-//adding a route for /urls, which will use res.render() and pass the URL data from urlDatabase to our template, because that's what we want to display on our /urls page
+//Adding a GET request for users to BROWSE their urls
+//it's a route for /urls, which will use res.render() and pass the URL data from urlDatabase to our template, because that's what we want to display on our /urls page
 app.get('/urls', (req, res) => {
   //we are passing in a template object so that we have access to the properties within urlDatabase in our urls_index page
   let templateVars = { urls: urlDatabase };
@@ -70,7 +71,7 @@ app.get('/urls/:shortURL', (req, res) => {
   res.render('urls_show', templateVars);
 })
 
-//route for the post request to create a new url
+//route for the POST request to CREATE/ADD a new url
 //the urls_new form has a method that invokes POST with the action "/urls". So this route corresponds with POST on /urls
 app.post('/urls', (req, res) => {
   // console.log(req.body) //log the POST request body to the console, an object with the input name as the key and the user's input as the value. We receive it in this format because of the body-parser module
@@ -96,3 +97,13 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   res.redirect('/urls');
 })
 
+//add a POST request allowing us to EDIT/UPDATE existing URLs
+//the functionality should take in some input from a form (req.body[input-name], where input-name s/b longURL), 1: update the urlDatabase's value for the relevant shortURL with the req.body.input-name and 2: redirect to the urls browse page
+//we are using /urls/:id. When the user pushes the submit button on the url's edit form, this is the route that's triggered
+//when we use :something, something is available as req.param.something
+app.post('/urls/:shortURL', (req, res) => {
+  //req.params.shortURL is available because :shortURL
+  //req.body.longURL is available because name = longURL and value= <%= longURL%> in urls_show edit form
+  urlDatabase[req.params.shortURL] = req.body.longURL; //setting the value of the shortURL's key 
+  res.redirect('/urls'); //redirect to urls page
+})
