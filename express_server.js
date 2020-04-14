@@ -89,3 +89,10 @@ app.get('/u/:shortURL', (req, res) => {
   res.redirect(longURL);
 })
 
+//route handling for the POST request to DELETE a URL from the urls page. The path ends in "delete" because that's the route that's triggered when the user clicks the delete button
+app.post('/urls/:shortURL/delete', (req, res) => {
+  //deletes it from the DB. I don't understand how it is req.params. I guess cuz there's no body?
+  delete urlDatabase[req.params.shortURL];
+  res.redirect('/urls');
+})
+
