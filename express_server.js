@@ -17,6 +17,13 @@ app.listen(PORT, () => {
 });
 
 //random endpoint that displays the database object in JSON
+//res.json
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
+
+//random endpoint that displays hello world formatted
+//res.send
+app.get('/hello', (req, res) => {
+  res.send("<html><body>Hello <b>World</b></body></html>\n");
+})
