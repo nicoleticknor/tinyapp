@@ -5,6 +5,21 @@ const PORT = 8080;
 //must tell express to use EJS as its templating engine
 app.set('view engine', 'ejs');
 
+//adding the body-parser library 
+const bodyParser = require('body-parser');
+//telling express() (our app) to use body-parser. This will parse any req.body objects received from POST requests from a Buffer into a string that we have access to. We will get req.body.longURL from this 
+app.use(bodyParser.urlencoded({ extended: true }));
+
+//random string generator
+function generateRandomString() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 1; i <= 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
@@ -55,3 +70,9 @@ app.get('/urls/:shortURL', (req, res) => {
   res.render('urls_show', templateVars);
 })
 
+//route for the post request to create a new url
+//the urls_new form has a method that invokes POST with the action "/urls". So this route corresponds with POST on /urls
+app.post('/urls', (req, res) => {
+  console.log(req.body) //log the POST request body to the console, an object with the input name as the key and the user's input as the value. We receive it in this format because of the body-parser module
+  res.send("Ok"); // temp dummy response
+})

@@ -16,9 +16,10 @@
 
     <main style="margin: 1em;">
       <h3>Create TinyURL</h3>
-      <!--action tells the form which url to submit.
+      <!--action tells the form which url to submit to.
           method tells the form which HTTP method to use when submitting
-          input name="longURL" will add the key longURL to the data sent in the body of the POST request (i.e. the URL the user enters)-->
+          input name="longURL" will add the key longURL to the data sent in the body of the POST request (i.e. the URL the user enters)
+        so, it will make a POST request to /urls, and the body will contain a KV pair with the name "longURL". We will need to do somethign with that "longURL" property in our server file-->
       <form class="form-inline" action="/urls" method="POST">
         <div class="form-group mb-2">
           <label for="longURL">Enter a URL:</label>
