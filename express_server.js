@@ -27,6 +27,19 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+}
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -44,17 +57,17 @@ app.get('/hello', (req, res) => {
 })
 
 app.get('/urls', (req, res) => {
-  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  let templateVars = { urls: urlDatabase, userID: users[req.cookies["userID"]] };
   res.render("urls_index", templateVars);
 })
 
 app.get('/urls/new', (req, res) => {
-  let templateVars = { username: req.cookies["username"] };
+  let templateVars = { userID: users[req.cookies["userID"]] };
   res.render("urls_new", templateVars);
 })
 
 app.get('/urls/:shortURL', (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies["username"] };
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], userID: users[req.cookies["userID"]] };
   res.render('urls_show', templateVars);
 })
 
@@ -81,12 +94,25 @@ app.post('/urls/:shortURL', (req, res) => {
 
 //adding a login route
 app.post('/login', (req, res) => {
-  res.cookie('username', req.body.username);
+  res.cookie('userID', req.body.userID);
   res.redirect('/urls');
 })
 
 //adding a logout route
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('userID');
   res.redirect('/urls');
+})
+
+app.get('/register', (req, res) => {
+  let templateVars = { userID: users[req.cookies["userID"]] };
+  res.render("registration", templateVars);
+})
+
+app.post('/register', (req, res) => {
+  let userID = generateRandomString();
+  users[userID] = { id: userID, email: req.body.email, password: req.body.password };
+  res.cookie('userID', userID);
+  res.redirect('/urls');
+  console.log(users);
 })
