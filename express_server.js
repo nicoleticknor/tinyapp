@@ -93,7 +93,14 @@ app.post('/urls/:shortURL', (req, res) => {
 })
 
 app.post('/login', (req, res) => {
-  res.cookie('userID', req.body.userID);
+  const userAry = Object.values(users);
+  let userID = null;
+  userAry.forEach(user => {
+    if (user.email === req.body.email) {
+      userID = user.id;
+    }
+  })
+  res.cookie('userID', userID);
   res.redirect('/urls');
 })
 
@@ -108,7 +115,6 @@ app.get('/register', (req, res) => {
 })
 
 app.post('/register', (req, res) => {
-
   const userAry = Object.values(users);
   userAry.forEach(user => {
     if (user.email === req.body.email) {
@@ -116,7 +122,6 @@ app.post('/register', (req, res) => {
       return;
     }
   })
-
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('Error: 400 - email and/or password blank');
     return;
@@ -125,5 +130,11 @@ app.post('/register', (req, res) => {
     users[userID] = { id: userID, email: req.body.email, password: req.body.password };
     res.cookie('userID', userID);
     res.redirect('/urls');
+    console.log(users[userID]);
   }
+})
+
+app.get('/login', (req, res) => {
+  let templateVars = { userID: users[req.cookies["userID"]] };
+  res.render("login", templateVars);
 })
