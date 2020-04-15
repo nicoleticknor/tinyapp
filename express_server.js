@@ -37,6 +37,11 @@ const users = {
     id: "user2RandomID",
     email: "user2@example.com",
     password: "dishwasher-funk"
+  },
+  "nicoleTest": {
+    id: "nicoleTest",
+    email: "nic@test.com",
+    password: "test"
   }
 }
 
@@ -95,11 +100,25 @@ app.post('/urls/:shortURL', (req, res) => {
 app.post('/login', (req, res) => {
   const userAry = Object.values(users);
   let userID = null;
+  let password = null;
   userAry.forEach(user => {
     if (user.email === req.body.email) {
       userID = user.id;
+      if (user.password === req.body.password) {
+        password = user.password;
+      }
+      return;
     }
-  })
+  });
+
+  if (userID === null) {
+    return res.status(403).send('Error: 403 - invalid user email');
+  }
+
+  if (password === null) {
+    return res.status(400).send('Error: 403 - incorrect password');
+  }
+
   res.cookie('userID', userID);
   res.redirect('/urls');
 })
