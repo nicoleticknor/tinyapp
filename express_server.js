@@ -63,25 +63,29 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+const urlsForUser = (id) => {
+  const urlDatabaseAry = Object.entries(urlDatabase);
+  const filteredURLs = urlDatabaseAry.reduce((acc, url) => {
+    if (url[1].userID === id) {
+      acc.push(url);
+    }
+    return acc;
+  }, []);
+
+  return filteredURLs;
+};
+
 /* --------- URL-RELATED ROUTES ---------*/
 
 app.get('/urls', (req, res) => {
-  const urlDatabaseAry = Object.entries(urlDatabase);
   if (users[req.cookies["userID"]]) {
-    const filteredURLs = urlDatabaseAry.reduce((acc, url) => {
-      if (url[1].userID === users[req.cookies["userID"]].id) {
-        acc.push(url);
-      }
-      return acc;
-    }, []);
-
+    const filteredURLs = urlsForUser(users[req.cookies["userID"]].id);
     let templateVars = { urls: filteredURLs, userID: users[req.cookies["userID"]] };
     res.render("urls_index", templateVars);
   } else {
     //login redirect
     res.redirect('login');
   }
-
 });
 
 app.post('/urls', (req, res) => {
@@ -110,11 +114,21 @@ app.get('/urls/:shortURL', (req, res) => {
 });
 
 app.post('/urls/:shortURL', (req, res) => {
+  //login redirect
+  if (users[req.cookies["userID"]] === undefined) {
+    res.redirect('/login');
+    return;
+  }
   urlDatabase[req.params.shortURL] = { longURL: req.body.longURL, userID: users[req.cookies["userID"]].id };
   res.redirect('/urls');
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
+  //login redirect
+  if (users[req.cookies["userID"]] === undefined) {
+    res.redirect('/login');
+    return;
+  }
   const shortString = Object.values(req.params).toString();
   const shortURL = shortString.split(',')[0];
   delete urlDatabase[shortURL];
