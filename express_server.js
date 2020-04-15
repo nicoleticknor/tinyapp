@@ -67,6 +67,9 @@ app.get('/urls', (req, res) => {
 })
 
 app.get('/urls/new', (req, res) => {
+  if (users[req.cookies["userID"]] === undefined) {
+    res.redirect('/login');
+  }
   let templateVars = { userID: users[req.cookies["userID"]] };
   res.render("urls_new", templateVars);
 })
