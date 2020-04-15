@@ -92,13 +92,11 @@ app.post('/urls/:shortURL', (req, res) => {
   res.redirect('/urls');
 })
 
-//adding a login route
 app.post('/login', (req, res) => {
   res.cookie('userID', req.body.userID);
   res.redirect('/urls');
 })
 
-//adding a logout route
 app.post('/logout', (req, res) => {
   res.clearCookie('userID');
   res.redirect('/urls');
@@ -110,9 +108,22 @@ app.get('/register', (req, res) => {
 })
 
 app.post('/register', (req, res) => {
-  let userID = generateRandomString();
-  users[userID] = { id: userID, email: req.body.email, password: req.body.password };
-  res.cookie('userID', userID);
-  res.redirect('/urls');
-  console.log(users);
+
+  const userAry = Object.values(users);
+  userAry.forEach(user => {
+    if (user.email === req.body.email) {
+      res.status(400).send('Error: 400 - user email already exists');
+      return;
+    }
+  })
+
+  if (req.body.email === '' || req.body.password === '') {
+    res.status(400).send('Error: 400 - email and/or password blank');
+    return;
+  } else {
+    let userID = generateRandomString();
+    users[userID] = { id: userID, email: req.body.email, password: req.body.password };
+    res.cookie('userID', userID);
+    res.redirect('/urls');
+  }
 })
