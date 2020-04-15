@@ -18,7 +18,6 @@
           <tr>
             <th scope="col">Short URL</th>
             <th scope="col">Long URL</th>
-            <!--adding a delete & edit columns-->
             <th scope="col">Edit</th>
             <th scope="col">Delete</th>
           </tr>
@@ -28,11 +27,9 @@
           <tr>
             <td><%= url %></td>
             <td><%= urls[url] %></td>
-            <!--adding an EDIT button to navigate to appropriate urls/:shortURL page-->
             <td>
               <form method="GET" action="/urls/<%= url %>"><button type="edit" class="btn btn-outline-primary">Edit</button></form>
             </td>
-            <!--adding a DELETE button using a POST because no Ajax-->
             <td>
               <form method="POST" action="/urls/<%= url %>/delete"><button type="delete" class="btn btn-outline-danger">Delete</button></form>
             </td>

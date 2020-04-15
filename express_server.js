@@ -1,7 +1,9 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
+const cookieParser = require('cookie-parser')
 
+app.use(cookieParser())
 //must tell express to use EJS as its templating engine
 app.set('view engine', 'ejs');
 
@@ -25,7 +27,6 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-//root page where all it says is hello
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -34,76 +35,58 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-//random endpoint that displays the database object in JSON
-//res.json
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-//random endpoint that displays hello world formatted
-//res.send
 app.get('/hello', (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 })
 
-//Adding a GET request for users to BROWSE their urls
-//it's a route for /urls, which will use res.render() and pass the URL data from urlDatabase to our template, because that's what we want to display on our /urls page
 app.get('/urls', (req, res) => {
-  //we are passing in a template object so that we have access to the properties within urlDatabase in our urls_index page
-  let templateVars = { urls: urlDatabase };
-  //now we can use those funny <%= %> symbols with urls: urlDatabase KVs
-  //it's always passed in as an object, so we can use the key (urls) to access it within the template
-  //<%= urls %> will render the whole urlDatabase, <%= urls.url %> will render a specific url in a loop context
+  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render("urls_index", templateVars);
 })
 
-//adding a GET route to display the new URL creation form when user navigates to /urls/new
-//we have to put this BEFORE the /urls/:shortURL route, because otherwise it will think /new is just an instance of :shortURL!
 app.get('/urls/new', (req, res) => {
-  //telling it to render the code found in the urls_new file
-  //not adding any dynamic variables because we don't need any
-  res.render("urls_new");
+  let templateVars = { username: req.cookies["username"] };
+  res.render("urls_new", templateVars);
 })
 
 app.get('/urls/:shortURL', (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  //so now we have access to the individual shortURL: longURL KV pair in the instance of the urls_show page this routes to when GET'd
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies["username"] };
   res.render('urls_show', templateVars);
 })
 
-//route for the POST request to CREATE/ADD a new url
-//the urls_new form has a method that invokes POST with the action "/urls". So this route corresponds with POST on /urls
 app.post('/urls', (req, res) => {
-  // console.log(req.body) //log the POST request body to the console, an object with the input name as the key and the user's input as the value. We receive it in this format because of the body-parser module
-  //create new shortURL
   const shortURL = generateRandomString();
-  //add a KV pair to the urlDatabase with the shortURL generated and longurl submitted by user in req.body.longURL (so named because of the input name="longURL" in our urls_new page)
   urlDatabase[shortURL] = req.body.longURL;
-  res.redirect(`/urls/${shortURL}`); //after submission, user is sent to the new endpoint created for that shortURL that will invoke the app.get('/urls/:shortURL' which renders the 'urls_show' for that shortURL)
+  res.redirect(`/urls/${shortURL}`);
 })
 
-//setting up a new app.get to allow users to navigate to the website they've shorted the URL for. going to use /u/ instead of /url/ because that's what the assignment tells me... I think it's because we can't double up on /urls/:shortURL GET methods..?
-//so when we want to add a link to the website, we will internally make the GET request towards /u/:shortURL
-//this was in the template we copied & pasted so  we don't need to implement ourselves, but go check out urls_show.
 app.get('/u/:shortURL', (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 })
 
-//route handling for the POST request to DELETE a URL from the urls page. The path ends in "delete" because that's the route that's triggered when the user clicks the delete button
 app.post('/urls/:shortURL/delete', (req, res) => {
-  //deletes it from the DB. I don't understand how it is req.params. I guess cuz there's no body?
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
 })
 
-//add a POST request allowing us to EDIT/UPDATE existing URLs
-//the functionality should take in some input from a form (req.body[input-name], where input-name s/b longURL), 1: update the urlDatabase's value for the relevant shortURL with the req.body.input-name and 2: redirect to the urls browse page
-//we are using /urls/:id. When the user pushes the submit button on the url's edit form, this is the route that's triggered
-//when we use :something, something is available as req.param.something
 app.post('/urls/:shortURL', (req, res) => {
-  //req.params.shortURL is available because :shortURL
-  //req.body.longURL is available because name = longURL and value= <%= longURL%> in urls_show edit form
-  urlDatabase[req.params.shortURL] = req.body.longURL; //setting the value of the shortURL's key 
-  res.redirect('/urls'); //redirect to urls page
+  urlDatabase[req.params.shortURL] = req.body.longURL;
+  res.redirect('/urls');
+})
+
+//adding a login route
+app.post('/login', (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect('/urls');
+})
+
+//adding a logout route
+app.post('/logout', (req, res) => {
+  res.clearCookie('username');
+  res.redirect('/urls');
 })
