@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
 
 //adding the body-parser and cookie-parser libraries
 app.use(cookieParser());
@@ -144,6 +145,11 @@ app.get('/u/:shortURL', (req, res) => {
 
 /* --------- LOG IN and REGISTER ROUTES ---------*/
 
+app.get('/login', (req, res) => {
+  let templateVars = { userID: users[req.cookies["userID"]] };
+  res.render("login", templateVars);
+});
+
 app.post('/login', (req, res) => {
   const userAry = Object.values(users);
   let userID = null;
@@ -151,8 +157,10 @@ app.post('/login', (req, res) => {
   userAry.forEach(user => {
     if (user.email === req.body.email) {
       userID = user.id;
-      if (user.password === req.body.password) {
+      const cryptCompare = (bcrypt.compareSync(req.body.password, user.password));
+      if (cryptCompare) {
         password = user.password;
+        console.log(password);
       }
       return;
     }
@@ -170,18 +178,13 @@ app.post('/login', (req, res) => {
   res.redirect('/urls');
 });
 
-app.post('/logout', (req, res) => {
-  console.log(req.cookies);
-  res.clearCookie('userID');
-  res.redirect('/urls');
-});
-
 app.get('/register', (req, res) => {
   let templateVars = { userID: users[req.cookies["userID"]] };
   res.render("registration", templateVars);
 });
 
 app.post('/register', (req, res) => {
+  const password = req.body.password;
   const userAry = Object.values(users);
   userAry.forEach(user => {
     if (user.email === req.body.email) {
@@ -189,19 +192,20 @@ app.post('/register', (req, res) => {
       return;
     }
   });
-  if (req.body.email === '' || req.body.password === '') {
+  if (req.body.email === '' || password === '') {
     res.status(400).send('Error: 400 - email and/or password blank');
     return;
   } else {
+    const hashedPassword = bcrypt.hashSync(password, 10);
     let userID = generateRandomString();
-    users[userID] = { id: userID, email: req.body.email, password: req.body.password };
+    users[userID] = { id: userID, email: req.body.email, password: hashedPassword };
     res.cookie('userID', userID);
     res.redirect('/urls');
-    console.log(users[userID]);
   }
 });
 
-app.get('/login', (req, res) => {
-  let templateVars = { userID: users[req.cookies["userID"]] };
-  res.render("login", templateVars);
+app.post('/logout', (req, res) => {
+  console.log(req.cookies);
+  res.clearCookie('userID');
+  res.redirect('/urls');
 });
