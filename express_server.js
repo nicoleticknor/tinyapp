@@ -1,11 +1,14 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 
 //adding the body-parser and cookie-parser libraries
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['secret-cookie-key', 'key2']
+}))
 app.set('view engine', 'ejs');
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -64,6 +67,7 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+//function to filter URLs by user
 const urlsForUser = (id) => {
   const urlDatabaseAry = Object.entries(urlDatabase);
   const filteredURLs = urlDatabaseAry.reduce((acc, url) => {
@@ -76,77 +80,52 @@ const urlsForUser = (id) => {
   return filteredURLs;
 };
 
-/* --------- URL-RELATED ROUTES ---------*/
+/* --------- GENERAL URL-RELATED ROUTES ---------*/
 
 app.get('/urls', (req, res) => {
-  if (users[req.cookies["userID"]]) {
-    const filteredURLs = urlsForUser(users[req.cookies["userID"]].id);
-    let templateVars = { urls: filteredURLs, userID: users[req.cookies["userID"]] };
-    res.render("urls_index", templateVars);
-  } else {
-    //login redirect
+  if (users[req.session.userID] === undefined) {
     res.redirect('login');
+  }
+  if (req.session.userID) {
+    const filteredURLs = urlsForUser(req.session.userID);
+    let templateVars = { urls: filteredURLs, userID: req.session.userID, email: users[req.session.userID].email };
+    res.render("urls_index", templateVars);
   }
 });
 
 app.post('/urls', (req, res) => {
+  let extWebsite = null;
+  urlParsed = req.body.longURL.split('http://')
+
+  if (urlParsed.length === 1) {
+    extWebsite = 'http://' + urlParsed[0];
+  } else {
+    extWebsite = req.body.longURL;
+  }
+  if (extWebsite === null) {
+    res.status(400).send('Error: 400 - invalid URL');
+    return;
+  }
+
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = { longURL: req.body.longURL, userID: users[req.cookies["userID"]].id };
+  urlDatabase[shortURL] = { longURL: extWebsite, userID: req.session.userID };
   res.redirect(`/urls/${shortURL}`);
 });
 
 app.get('/urls/new', (req, res) => {
-  //login redirect
-  if (users[req.cookies["userID"]] === undefined) {
+  if (users[req.session.userID] === undefined) {
     res.redirect('/login');
+  } else {
+    let templateVars = { userID: req.session.userID, email: users[req.session.userID].email };
+    res.render("urls_new", templateVars);
   }
-  let templateVars = { userID: users[req.cookies["userID"]] };
-  res.render("urls_new", templateVars);
-});
 
-app.get('/urls/:shortURL', (req, res) => {
-  //login redirect
-  if (users[req.cookies["userID"]] === undefined) {
-    res.redirect('/login');
-  }
-  const shortURL = Object.values(req.params);
-  let templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, userID: users[req.cookies["userID"]] };
-  res.render('urls_show', templateVars);
-});
-
-app.post('/urls/:shortURL', (req, res) => {
-  //login redirect
-  if (users[req.cookies["userID"]] === undefined) {
-    res.redirect('/login');
-    return;
-  }
-  urlDatabase[req.params.shortURL] = { longURL: req.body.longURL, userID: users[req.cookies["userID"]].id };
-  res.redirect('/urls');
-});
-
-app.post('/urls/:shortURL/delete', (req, res) => {
-  //login redirect
-  if (users[req.cookies["userID"]] === undefined) {
-    res.redirect('/login');
-    return;
-  }
-  const shortString = Object.values(req.params).toString();
-  const shortURL = shortString.split(',')[0];
-  delete urlDatabase[shortURL];
-  res.redirect('/urls');
-});
-
-//a redirect route for visiting the desired URL
-app.get('/u/:shortURL', (req, res) => {
-  const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL].longURL;
-  res.redirect(longURL);
 });
 
 /* --------- LOG IN and REGISTER ROUTES ---------*/
 
 app.get('/login', (req, res) => {
-  let templateVars = { userID: users[req.cookies["userID"]] };
+  let templateVars = { userID: req.session.userID };
   res.render("login", templateVars);
 });
 
@@ -157,12 +136,15 @@ app.post('/login', (req, res) => {
   userAry.forEach(user => {
     if (user.email === req.body.email) {
       userID = user.id;
-      const cryptCompare = (bcrypt.compareSync(req.body.password, user.password));
-      if (cryptCompare) {
-        password = user.password;
-        console.log(password);
+      /* -----  this condtion is for testing with nicoleTest user. remove for prod ----*/
+      if (user.id = "nicoleTest") {
+        return password = user.password;
+      } else {
+        const cryptCompare = (bcrypt.compareSync(req.body.password, user.password));
+        if (cryptCompare) {
+          return password = user.password;
+        }
       }
-      return;
     }
   });
 
@@ -174,12 +156,12 @@ app.post('/login', (req, res) => {
     return res.status(400).send('Error: 403 - incorrect password');
   }
 
-  res.cookie('userID', userID);
+  req.session.userID = userID;
   res.redirect('/urls');
 });
 
 app.get('/register', (req, res) => {
-  let templateVars = { userID: users[req.cookies["userID"]] };
+  let templateVars = { userID: req.session.userID }; // is userID needed?
   res.render("registration", templateVars);
 });
 
@@ -192,6 +174,7 @@ app.post('/register', (req, res) => {
       return;
     }
   });
+
   if (req.body.email === '' || password === '') {
     res.status(400).send('Error: 400 - email and/or password blank');
     return;
@@ -199,13 +182,47 @@ app.post('/register', (req, res) => {
     const hashedPassword = bcrypt.hashSync(password, 10);
     let userID = generateRandomString();
     users[userID] = { id: userID, email: req.body.email, password: hashedPassword };
-    res.cookie('userID', userID);
+    req.session.userID = userID;
     res.redirect('/urls');
   }
 });
 
 app.post('/logout', (req, res) => {
-  console.log(req.cookies);
-  res.clearCookie('userID');
+  req.session = null;
+  res.redirect('/login');
+});
+
+/* --------- URL-SPECIFIC ROUTES ---------*/
+
+app.get('/urls/:shortURL', (req, res) => {
+  if (users[req.session.userID] === undefined) {
+    res.redirect('login');
+    return;
+  }
+  const shortURL = Object.values(req.params);
+  let templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, userID: req.session.userID, email: users[req.session.userID].email };
+  res.render('urls_show', templateVars);
+});
+
+app.post('/urls/:shortURL', (req, res) => {
+  urlDatabase[req.params.shortURL] = { longURL: req.body.longURL, userID: req.session.userID };
   res.redirect('/urls');
+});
+
+app.post('/urls/:shortURL/delete', (req, res) => {
+  if (req.session.userID === undefined) {
+    res.redirect('/login');
+    return;
+  }
+  const shortString = Object.values(req.params).toString();
+  const shortURL = shortString.split(',')[0];
+  delete urlDatabase[shortURL];
+  res.redirect('/urls');
+});
+
+//a redirect route for visiting the desired URL
+app.get('/u/:shortURL', (req, res) => {
+  const shortURL = req.params.shortURL;
+  const extWebsite = urlDatabase[shortURL].longURL;
+  res.redirect(extWebsite);
 });

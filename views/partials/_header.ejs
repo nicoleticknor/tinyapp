@@ -19,7 +19,7 @@
 
         <% } else {%>
 
-        <h5 class="nav-item text-white my-2 ml-5 my-lg-5">Logged In As: <%= userID.email %>!</h5>
+        <h5 class="nav-item text-white my-2 ml-5 my-lg-5">Logged In As: <%= email %>!</h5>
         <form method="POST" action="/logout">
           <button type="submit" class="btn btn-outline-dark my-2 ml-5 my-md-0">Logout</button></form>
         <% } %>
