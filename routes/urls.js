@@ -16,38 +16,38 @@ const { urlsForUser } = require('../helpers');
  * Description
  * @params {*} link - Describe parameter
  */
-router.route('/')
-  .get((req, res) => {
-    if (users[req.session.userID] === undefined) {
-      return res.status(401).send('Error: 401 - must be logged in to view your Short URLs');
-    }
+router.get('/', (req, res) => {
+  if (users[req.session.userID] === undefined) {
+    return res.status(401).send('Error: 401 - must be logged in to view your Short URLs');
+  }
 
-    if (req.session.userID) {
-      const filteredURLs = urlsForUser(req.session.userID);
-      let templateVars = { urls: filteredURLs, userID: req.session.userID, email: users[req.session.userID].email };
-      res.render("urls_index", templateVars);
-    }
-  })
-  .post((req, res) => {
-    //process to add http:// to a URL if the user did not include this in the from
-    //is this the sort of thing that should be modularized into a function? I'm not using it more than once, but in theory I could
-    let extWebsite = null;
-    const urlParsed = req.body.longURL.split('http://');
+  if (req.session.userID) {
+    const filteredURLs = urlsForUser(req.session.userID);
+    let templateVars = { urls: filteredURLs, userID: req.session.userID, email: users[req.session.userID].email };
+    res.render("urls_index", templateVars);
+  }
+});
 
-    if (urlParsed.length === 1) {
-      extWebsite = 'http://' + urlParsed[0];
-    } else {
-      extWebsite = req.body.longURL;
-    }
-    if (extWebsite === null) {
-      res.status(400).send('Error: 400 - invalid URL');
-      return;
-    }
+router.post('/', (req, res) => {
+  //process to add http:// to a URL if the user did not include this in the from
+  //is this the sort of thing that should be modularized into a function? I'm not using it more than once, but in theory I could
+  let extWebsite = null;
+  const urlParsed = req.body.longURL.split('http://');
 
-    const shortURL = generateRandomString();
-    urlDatabase[shortURL] = { longURL: extWebsite, userID: req.session.userID };
-    res.redirect(`/urls/${shortURL}`);
-  });
+  if (urlParsed.length === 1) {
+    extWebsite = 'http://' + urlParsed[0];
+  } else {
+    extWebsite = req.body.longURL;
+  }
+  if (extWebsite === null) {
+    res.status(400).send('Error: 400 - invalid URL');
+    return;
+  }
+
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = { longURL: extWebsite, userID: req.session.userID };
+  res.redirect(`/urls/${shortURL}`);
+});
 
 router.get('/new', (req, res) => {
   if (users[req.session.userID] === undefined) {
