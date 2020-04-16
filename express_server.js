@@ -5,7 +5,7 @@ const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 const methodOverride = require('method-override');
 
-//adding libraries
+//libraries
 app.use(methodOverride('_method'));
 app.use(cookieSession({
   name: 'session',
@@ -15,7 +15,7 @@ app.set('view engine', 'ejs');
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 
-//server port info
+//server/port 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
@@ -56,19 +56,6 @@ const urlDatabase = {
   "OJv8Ic": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID" }
 };
 
-// historic routes from early examples
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
-app.get('/hello', (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
 //function to filter URLs by user
 const urlsForUser = (id) => {
   const urlDatabaseAry = Object.entries(urlDatabase);
@@ -84,9 +71,17 @@ const urlsForUser = (id) => {
 
 /* --------- GENERAL URL-RELATED ROUTES ---------*/
 
+app.get("/", (req, res) => {
+  if (users[req.session.userID] === undefined) {
+    res.redirect('/login');
+  } else {
+    res.redirect('/urls')
+  }
+});
+
 app.get('/urls', (req, res) => {
   if (users[req.session.userID] === undefined) {
-    res.redirect('login');
+    res.redirect('/login');
   }
   if (req.session.userID) {
     const filteredURLs = urlsForUser(req.session.userID);
@@ -198,7 +193,7 @@ app.post('/logout', (req, res) => {
 
 app.get('/urls/:shortURL', (req, res) => {
   if (users[req.session.userID] === undefined) {
-    res.redirect('login');
+    res.redirect('/login');
     return;
   }
   const shortURL = Object.values(req.params);
