@@ -1,17 +1,17 @@
 const express = require("express");
 const router = express.Router();
+const bcrypt = require('bcrypt');
 
 //
 const { urlDatabase } = require('../databases');
 const { users } = require('../databases');
 const { generateRandomString } = require('../helpers');
-const { urlsForUser } = require('../helpers');
 
 router.get("/", (req, res) => {
-  if (users[req.session.userID] === undefined) {
+  if (!users[req.session.userID]) {
     res.redirect('/login');
   } else {
-    res.redirect('/urls')
+    res.redirect('/urls');
   }
 });
 
@@ -26,40 +26,24 @@ router.get('/login', (req, res) => {
 
 router.post('/login', (req, res) => {
   const userAry = Object.values(users);
-  let userID = null;
-  let isPasswordCorrect = false;
-
-  userAry.forEach(user => {
+  for (const user of userAry) {
     if (user.email === req.body.email) {
-      //if the request contains a valid user email, set userID
-      userID = user.id;
-      /* -----  this condtion is for testing with nicoleTest and nicoleTest2 users. 
-      remove for prod ----*/
-      if (user.id === "nicoleTest" || user.id === "nicoleTest2") {
-        return isPasswordCorrect = true;
-        /* ---- end testing condition*/
+      const cryptCompare = (bcrypt.compareSync(req.body.password, user.password));
+      //note: nicoleTest and nicoleTest2 are static test accounts for which passwords are not hashed
+      if (cryptCompare === true || user.id === "nicoleTest" || user.id === "nicoleTest2") {
+        req.session.userID = user.id;
+        return res.redirect('/urls');
       } else {
-        //compare the password in the request with the password in the database
-        const cryptCompare = (bcrypt.compareSync(req.body.password, user.password));
-        if (cryptCompare) {
-          //if they match, update the isPasswordCorrect variable to true
-          return isPasswordCorrect = true;
-        }
+        return res.status(403).send('Error: 403 - invalid password');
       }
     }
-  });
-
-  if (userID === null || isPasswordCorrect !== true) {
-    return res.status(403).send('Error: 403 - invalid user email or password');
   }
-
-  req.session.userID = userID;
-  res.redirect('/urls');
+  return res.status(403).send('Error: 403 - invalid email');
 });
 
 router.get('/register', (req, res) => {
   if (users[req.session.userID]) {
-    //NB that I don't believe this is optimal behaviour; the user may want to register for a new account, and instead should be told that they must log out to register. 
+    //Built to spec; however, I don't believe this is optimal behaviour. The user may want to register for a new account, and in that case, they should be told to log out first, rather than redirecting them.
     res.redirect('/urls');
   } else {
     let templateVars = { userID: req.session.userID };
@@ -70,16 +54,15 @@ router.get('/register', (req, res) => {
 router.post('/register', (req, res) => {
   const password = req.body.password;
   const userAry = Object.values(users);
-  userAry.forEach(user => {
+
+  for (const user of userAry) {
     if (user.email === req.body.email) {
-      res.status(400).send('Error: 400 - user email already exists');
-      return;
+      return res.status(400).send('Error: 400 - user email already exists');
     }
-  });
+  }
 
   if (req.body.email === '' || password === '') {
-    res.status(400).send('Error: 400 - email and/or password blank');
-    return;
+    return res.status(400).send('Error: 400 - email and/or password blank');
   } else {
     const hashedPassword = bcrypt.hashSync(password, 10);
     let userID = generateRandomString();
@@ -95,7 +78,7 @@ router.post('/logout', (req, res) => {
 });
 
 //need to update to return HTML with a rel error msg
-//what can I do to test whether the external website URL exists or not? 
+//what can I do to test whether the external website URL exists or not?
 router.get('/u/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   const extWebsite = urlDatabase[shortURL].longURL;
