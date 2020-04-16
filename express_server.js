@@ -32,13 +32,13 @@ const generateRandomString = () => {
 
 //static users "database"
 const users = {
+  "nicoleTest2": {
+    id: "nicoleTest2",
+    email: "nic@test2.com",
+    password: "test"
+  },
   "userRandomID": {
     id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur"
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
     email: "user2@example.com",
     password: "dishwasher-funk"
   },
@@ -53,6 +53,7 @@ const users = {
 const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "nicoleTest" },
   "9sm5xK": { longURL: "http://www.google.com", userID: "nicoleTest" },
+  "8f6S9h": { longURL: "http://www.github.com", userID: "nicoleTest2" },
   "OJv8Ic": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID" }
 };
 
@@ -79,10 +80,12 @@ app.get("/", (req, res) => {
   }
 });
 
+//display HTML with a relevant error message 
 app.get('/urls', (req, res) => {
   if (users[req.session.userID] === undefined) {
-    res.redirect('/login');
+    return res.status(401).send('Error: 401 - must be logged in to view your Short URLs');
   }
+
   if (req.session.userID) {
     const filteredURLs = urlsForUser(req.session.userID);
     let templateVars = { urls: filteredURLs, userID: req.session.userID, email: users[req.session.userID].email };
@@ -91,6 +94,8 @@ app.get('/urls', (req, res) => {
 });
 
 app.post('/urls', (req, res) => {
+  //process to add http:// to a URL if the user did not include this in the from
+  //is this the sort of thing that should be modularized into a function? I'm not using it more than once, but in theory I could
   let extWebsite = null;
   const urlParsed = req.body.longURL.split('http://');
 
@@ -111,46 +116,51 @@ app.post('/urls', (req, res) => {
 
 app.get('/urls/new', (req, res) => {
   if (users[req.session.userID] === undefined) {
-    res.redirect('/login');
+    return res.status(401).send('Error: 401 - must be logged in to create a new Short URL');
   } else {
     let templateVars = { userID: req.session.userID, email: users[req.session.userID].email };
     res.render("urls_new", templateVars);
   }
-
 });
 
 /* --------- LOG IN and REGISTER ROUTES ---------*/
 
 app.get('/login', (req, res) => {
-  let templateVars = { userID: req.session.userID };
-  res.render("login", templateVars);
+  if (users[req.session.userID]) {
+    res.redirect('/urls');
+  } else {
+    let templateVars = { userID: req.session.userID };
+    res.render("login", templateVars);
+  }
 });
 
 app.post('/login', (req, res) => {
   const userAry = Object.values(users);
   let userID = null;
-  let password = null;
+  let isPasswordCorrect = false;
+
   userAry.forEach(user => {
     if (user.email === req.body.email) {
+      //if the request contains a valid user email, set userID
       userID = user.id;
-      /* -----  this condtion is for testing with nicoleTest user. remove for prod ----*/
-      if (user.id === "nicoleTest") {
-        return password = user.password;
+      /* -----  this condtion is for testing with nicoleTest and nicoleTest2 users. 
+      remove for prod ----*/
+      if (user.id === "nicoleTest" || user.id === "nicoleTest2") {
+        return isPasswordCorrect = true;
+        /* ---- end testing condition*/
       } else {
+        //compare the password in the request with the password in the database
         const cryptCompare = (bcrypt.compareSync(req.body.password, user.password));
         if (cryptCompare) {
-          return password = user.password;
+          //if they match, update the isPasswordCorrect variable to true
+          return isPasswordCorrect = true;
         }
       }
     }
   });
 
-  if (userID === null) {
-    return res.status(403).send('Error: 403 - invalid user email');
-  }
-
-  if (password === null) {
-    return res.status(400).send('Error: 403 - incorrect password');
+  if (userID === null || isPasswordCorrect !== true) {
+    return res.status(403).send('Error: 403 - invalid user email or password');
   }
 
   req.session.userID = userID;
@@ -158,8 +168,13 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
-  let templateVars = { userID: req.session.userID }; // is userID needed?
-  res.render("registration", templateVars);
+  if (users[req.session.userID]) {
+    //NB that I don't believe this is optimal behaviour; the user may want to register for a new account, and instead should be told that they must log out to register. 
+    res.redirect('/urls');
+  } else {
+    let templateVars = { userID: req.session.userID };
+    res.render("registration", templateVars);
+  }
 });
 
 app.post('/register', (req, res) => {
@@ -191,23 +206,49 @@ app.post('/logout', (req, res) => {
 
 /* --------- URL-SPECIFIC ROUTES ---------*/
 
+//need to update to display HTML with a relevant error message
 app.get('/urls/:shortURL', (req, res) => {
+
   if (users[req.session.userID] === undefined) {
     res.redirect('/login');
     return;
   }
+
   const shortURL = Object.values(req.params);
+
+  if (!urlDatabase[shortURL]) {
+    return res.status(404).send(`Error: 404 - ${shortURL} not found`);
+  }
+
+  if (users[req.session.userID].id !== urlDatabase[shortURL].userID) {
+    return res.status(401).send('Error: 401 - unauthorized URL');
+  }
+
   let templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, userID: req.session.userID, email: users[req.session.userID].email };
   res.render('urls_show', templateVars);
 });
 
-//using put with Method Override
+//THIS IS INCOMPLETE. figure out how to attempt to PUT from cURL
 app.put('/urls/:shortURL', (req, res) => {
+  if (users[req.session.userID] === undefined) {
+    res.redirect('/login');
+    return;
+  }
+
+  const shortURL = Object.values(req.params);
+
+  if (!urlDatabase[shortURL]) {
+    return res.status(404).send(`Error: 404 - ${shortURL} not found`);
+  }
+
+  if (users[req.session.userID].id !== urlDatabase[shortURL].userID) {
+    return res.status(401).send('Error: 401 - unauthorized URL');
+  }
+
   urlDatabase[req.params.shortURL] = { longURL: req.body.longURL, userID: req.session.userID };
   res.redirect('/urls');
 });
 
-//using delete with Method Override
 app.delete('/urls/:shortURL', (req, res) => {
   if (req.session.userID === undefined) {
     res.redirect('/login');
@@ -219,9 +260,14 @@ app.delete('/urls/:shortURL', (req, res) => {
   res.redirect('/urls');
 });
 
-//a redirect route for visiting the desired URL
+//need to update to return HTML with a rel error msg
+//what can I do to test whether the external website URL exists or not? 
 app.get('/u/:shortURL', (req, res) => {
+
   const shortURL = req.params.shortURL;
   const extWebsite = urlDatabase[shortURL].longURL;
   res.redirect(extWebsite);
+
+
+
 });
