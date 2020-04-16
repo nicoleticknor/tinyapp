@@ -3,12 +3,14 @@ const app = express();
 const PORT = 8080;
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
+const methodOverride = require('method-override');
 
-//adding the body-parser and cookie-parser libraries
+//adding libraries
+app.use(methodOverride('_method'));
 app.use(cookieSession({
   name: 'session',
   keys: ['secret-cookie-key', 'key2']
-}))
+}));
 app.set('view engine', 'ejs');
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -95,7 +97,7 @@ app.get('/urls', (req, res) => {
 
 app.post('/urls', (req, res) => {
   let extWebsite = null;
-  urlParsed = req.body.longURL.split('http://')
+  const urlParsed = req.body.longURL.split('http://');
 
   if (urlParsed.length === 1) {
     extWebsite = 'http://' + urlParsed[0];
@@ -137,7 +139,7 @@ app.post('/login', (req, res) => {
     if (user.email === req.body.email) {
       userID = user.id;
       /* -----  this condtion is for testing with nicoleTest user. remove for prod ----*/
-      if (user.id = "nicoleTest") {
+      if (user.id === "nicoleTest") {
         return password = user.password;
       } else {
         const cryptCompare = (bcrypt.compareSync(req.body.password, user.password));
@@ -204,12 +206,14 @@ app.get('/urls/:shortURL', (req, res) => {
   res.render('urls_show', templateVars);
 });
 
-app.post('/urls/:shortURL', (req, res) => {
+//using put with Method Override
+app.put('/urls/:shortURL', (req, res) => {
   urlDatabase[req.params.shortURL] = { longURL: req.body.longURL, userID: req.session.userID };
   res.redirect('/urls');
 });
 
-app.post('/urls/:shortURL/delete', (req, res) => {
+//using delete with Method Override
+app.delete('/urls/:shortURL', (req, res) => {
   if (req.session.userID === undefined) {
     res.redirect('/login');
     return;

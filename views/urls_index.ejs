@@ -32,7 +32,7 @@
               <form method="GET" action="/urls/<%= url[0] %>"><button type="edit" class="btn btn-outline-primary">Edit</button></form>
             </td>
             <td>
-              <form method="POST" action="/urls/<%= url %>/delete"><button type="delete" class="btn btn-outline-danger">Delete</button></form>
+              <form method="POST" action="/urls/<%= url %>?_method=delete"><button type="delete" class="btn btn-outline-danger">Delete</button></form>
             </td>
           </tr>
           <% } %>
