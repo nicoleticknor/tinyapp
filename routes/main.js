@@ -43,7 +43,7 @@ router.post('/login', (req, res) => {
 
 router.get('/register', (req, res) => {
   if (users[req.session.userID]) {
-    //Built to spec; however, I don't believe this is optimal behaviour. The user may want to register for a new account, and in that case, they should be told to log out first, rather than redirecting them.
+    //Built to spec; however, I don't believe this is optimal behaviour. The requirement is to redirect the user to /urls if they are already logged in. But the user may want to register for a new account, and in that case, they should be told to log out first with an error message, rather than redirecting them.
     res.redirect('/urls');
   } else {
     let templateVars = { userID: req.session.userID };
@@ -74,6 +74,8 @@ router.post('/register', (req, res) => {
 
 router.post('/logout', (req, res) => {
   req.session = null;
+  //I decided not to build this to spec. The requirement is to redirect to /urls upon logging out, but users who are not logged in and try to GET /urls are met with an error message. That's an unnecessary unpleasant effect for logging out, so the redirect here is to /login.
+  //flagging because this is a "Major" requirement, but I believe it's wrong.
   res.redirect('/login');
 });
 
