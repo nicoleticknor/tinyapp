@@ -28,8 +28,26 @@ const authenticateShortURL = (user, url) => {
   return true;
 };
 
+const checkURL = (website, url, callback) => {
+  const http = require('http');
+  const options = {
+    hostname: website,
+    port: 80,
+    path: '/',
+    method: 'HEAD'
+  };
+  const req = http.request(options, (res) => {
+    callback(true, url);
+  });
+  req.on('error', (e) => {
+    callback(false, url);
+  });
+  req.end();
+};
+
 module.exports = {
   generateRandomString,
   urlsForUser,
   authenticateShortURL,
+  checkURL
 };

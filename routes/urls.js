@@ -54,12 +54,12 @@ router.get('/new', (req, res) => {
 router.get('/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   if (!users[req.session.userID]) {
-    const templateVars = { userID: req.session.userID, statusCode: 401, errorMsg: `Error: 401 - shortURL ${shortURL} is unauthorized` };
+    const templateVars = { userID: req.session.userID, statusCode: 401, errorMsg: `ShortURL ${shortURL} is unauthorized` };
     res.render('error', templateVars);
   } else {
     const urlAuth = authenticateShortURL(users[req.session.userID].id, shortURL);
     if (!urlAuth) {
-      const templateVars = { userID: req.session.userID, email: users[req.session.userID].email, statusCode: 401, errorMsg: `Error: 401 - shortURL ${shortURL} is unauthorized` };
+      const templateVars = { userID: req.session.userID, email: users[req.session.userID].email, statusCode: 401, errorMsg: `ShortURL ${shortURL} is unauthorized` };
       res.render('error', templateVars);
     } else {
       let templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, userID: req.session.userID, email: users[req.session.userID].email };

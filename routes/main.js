@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const { urlDatabase } = require('../databases');
 const { users } = require('../databases');
 const { generateRandomString } = require('../helpers');
+const { checkURL } = require('../helpers');
 
 router.get("/", (req, res) => {
   if (!users[req.session.userID]) {
@@ -65,7 +66,7 @@ router.post('/register', (req, res) => {
   }
 
   if (req.body.email === '' || password === '') {
-    const templateVars = { userID: req.session.userID, statusCode: 400, errorMsg: 'Email and/or password blank' };
+    const templateVars = { userID: req.session.userID, statusCode: 400, errorMsg: 'Email and/or password is blank' };
     res.render('error', templateVars);
   } else {
     const hashedPassword = bcrypt.hashSync(password, 10);
@@ -78,17 +79,29 @@ router.post('/register', (req, res) => {
 
 router.post('/logout', (req, res) => {
   req.session = null;
-  //I decided not to build this to spec. The requirement is to redirect to /urls upon logging out, but users who are not logged in and try to GET /urls are met with an error message. That's an unnecessary unpleasant effect for logging out, so the redirect here is to /login.
-  //flagging because this is a "Major" requirement, but I believe it's wrong.
+  //I decided not to build this to spec.
+  //The requirement is to redirect to /urls upon logging out, but users who are not logged in and try to GET /urls are met with an error message.
+  //I think that's an unnecessary unpleasant effect for logging out, so the redirect here is to /login.
+  //Flagging because this is a "Major" requirement, but I believe it's wrong.
   res.redirect('/login');
 });
 
-//need to update to return HTML with a rel error msg
-//what can I do to test whether the external website URL exists or not?
 router.get('/u/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-  const extWebsite = urlDatabase[shortURL].longURL;
-  res.redirect(extWebsite);
+  const longURL = urlDatabase[shortURL].longURL;
+  const longURLSplit = urlDatabase[shortURL].longURL.split('//');
+  const extWebsite = longURLSplit[1].toString();
+
+  const httpCallback = (input, url) => {
+    if (input) {
+      return res.redirect(longURL);
+    } else {
+      const templateVars = { userID: req.session.userID, email: users[req.session.userID].email, statusCode: 401, errorMsg: `URL ${url} is not responding` };
+      res.render('error', templateVars);
+    }
+  };
+
+  checkURL(extWebsite, longURL, httpCallback);
 });
 
 module.exports = router;
