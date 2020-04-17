@@ -34,11 +34,13 @@ router.post('/login', (req, res) => {
         req.session.userID = user.id;
         return res.redirect('/urls');
       } else {
-        return res.status(403).send('Error: 403 - invalid password');
+        const templateVars = { userID: req.session.userID, statusCode: 403, errorMsg: 'Incorrect Password' };
+        res.render('error', templateVars);
       }
     }
   }
-  return res.status(403).send('Error: 403 - invalid email');
+  const templateVars = { userID: req.session.userID, statusCode: 403, errorMsg: 'Invalid Email Address' };
+  res.render('error', templateVars);
 });
 
 router.get('/register', (req, res) => {
@@ -57,12 +59,14 @@ router.post('/register', (req, res) => {
 
   for (const user of userAry) {
     if (user.email === req.body.email) {
-      return res.status(400).send('Error: 400 - user email already exists');
+      const templateVars = { userID: req.session.userID, statusCode: 400, errorMsg: 'An account with that email address already exists' };
+      res.render('error', templateVars);
     }
   }
 
   if (req.body.email === '' || password === '') {
-    return res.status(400).send('Error: 400 - email and/or password blank');
+    const templateVars = { userID: req.session.userID, statusCode: 400, errorMsg: 'Email and/or password blank' };
+    res.render('error', templateVars);
   } else {
     const hashedPassword = bcrypt.hashSync(password, 10);
     let userID = generateRandomString();

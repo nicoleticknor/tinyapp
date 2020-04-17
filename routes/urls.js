@@ -8,17 +8,19 @@ const { authenticateShortURL } = require('../helpers');
 
 router.get('/', (req, res) => {
   if (!users[req.session.userID]) {
-    res.status(401).send('Error: 401 - must be logged in to view your Short URLs');
+    const templateVars = { userID: req.session.userID, statusCode: 401, errorMsg: 'Must be logged in to view Short URLs' };
+    res.render('error', templateVars);
   } else {
     const filteredURLs = urlsForUser(req.session.userID);
     let templateVars = { urls: filteredURLs, userID: req.session.userID, email: users[req.session.userID].email };
-    res.render("urls_index", templateVars);
+    res.render('urls_index', templateVars);
   }
 });
 
 router.post('/', (req, res) => {
   if (!users[req.session.userID]) {
-    res.status(401).send('Error: 401 - must be logged in to view your Short URLs');
+    const templateVars = { userID: req.session.userID, statusCode: 401, errorMsg: 'Must be logged in to view Short URLs' };
+    res.render('error', templateVars);
   } else {
     let extWebsite = null;
     const urlParsed = req.body.longURL.split('http://');
@@ -29,7 +31,8 @@ router.post('/', (req, res) => {
       extWebsite = req.body.longURL;
     }
     if (extWebsite === null) {
-      res.status(400).send('Error: 400 - invalid URL');
+      const templateVars = { userID: req.session.userID, email: users[req.session.userID].email, statusCode: 400, errorMsg: 'Invalid URL' };
+      res.render('error', templateVars);
       return;
     }
 
@@ -48,15 +51,16 @@ router.get('/new', (req, res) => {
   }
 });
 
-//need to update to display HTML with a relevant error message
 router.get('/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   if (!users[req.session.userID]) {
-    res.status(401).send(`Error: 401 - shortURL ${shortURL} is unauthorized`);
+    const templateVars = { userID: req.session.userID, statusCode: 401, errorMsg: `Error: 401 - shortURL ${shortURL} is unauthorized` };
+    res.render('error', templateVars);
   } else {
     const urlAuth = authenticateShortURL(users[req.session.userID].id, shortURL);
     if (!urlAuth) {
-      res.status(401).send(`Error: 401 - shortURL ${shortURL} is unauthorized`);
+      const templateVars = { userID: req.session.userID, email: users[req.session.userID].email, statusCode: 401, errorMsg: `Error: 401 - shortURL ${shortURL} is unauthorized` };
+      res.render('error', templateVars);
     } else {
       let templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, userID: req.session.userID, email: users[req.session.userID].email };
       res.render('urls_show', templateVars);
@@ -64,7 +68,6 @@ router.get('/:shortURL', (req, res) => {
   }
 });
 
-//THIS IS INCOMPLETE. figure out how to attempt to PUT from cURL
 router.put('/:shortURL', (req, res) => {
   if (!users[req.session.userID]) {
     res.redirect('/login');
@@ -72,7 +75,8 @@ router.put('/:shortURL', (req, res) => {
     const shortURL = req.params.shortURL;
     const urlAuth = authenticateShortURL(users[req.session.userID].id, shortURL);
     if (!urlAuth) {
-      res.status(401).send(`Error: 401 - shortURL ${shortURL} is unauthorized`);
+      const templateVars = { userID: req.session.userID, email: users[req.session.userID].email, statusCode: 401, errorMsg: `ShortURL ${shortURL} is unauthorized` };
+      res.render('error', templateVars);
     } else {
       urlDatabase[req.params.shortURL] = { longURL: req.body.longURL, userID: req.session.userID };
       res.redirect('/urls');
@@ -87,7 +91,8 @@ router.delete('/:shortURL', (req, res) => {
     const shortURL = req.params.shortURL.split(',')[0];
     const urlAuth = authenticateShortURL(users[req.session.userID].id, shortURL);
     if (!urlAuth) {
-      res.status(401).send(`Error: 401 - shortURL ${shortURL} is unauthorized`);
+      const templateVars = { userID: req.session.userID, email: users[req.session.userID].email, statusCode: 401, errorMsg: `ShortURL ${shortURL} is unauthorized` };
+      res.render('error', templateVars);
     } else {
       delete urlDatabase[shortURL];
       res.redirect('/urls');
