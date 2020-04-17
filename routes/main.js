@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require('bcrypt');
-
-//
 const { urlDatabase } = require('../databases');
 const { users } = require('../databases');
 const { generateRandomString } = require('../helpers');
 const { checkURL } = require('../helpers');
+
+/*-------------User-Related Routes ------------*/
 
 router.get("/", (req, res) => {
   if (!users[req.session.userID]) {
@@ -27,6 +27,7 @@ router.get('/login', (req, res) => {
 
 router.post('/login', (req, res) => {
   const userAry = Object.values(users);
+  // process to validate user email and password, which is hashed with bcrypt
   for (const user of userAry) {
     if (user.email === req.body.email) {
       const cryptCompare = (bcrypt.compareSync(req.body.password, user.password));
@@ -46,7 +47,6 @@ router.post('/login', (req, res) => {
 
 router.get('/register', (req, res) => {
   if (users[req.session.userID]) {
-    //Built to spec; however, I don't believe this is optimal behaviour. The requirement is to redirect the user to /urls if they are already logged in. But the user may want to register for a new account, and in that case, they should be told to log out first with an error message, rather than redirecting them.
     res.redirect('/urls');
   } else {
     let templateVars = { userID: req.session.userID };
@@ -58,13 +58,13 @@ router.post('/register', (req, res) => {
   const password = req.body.password;
   const userAry = Object.values(users);
 
+  //guard clauses to prevent duplicate users and blank passwords or email addresses
   for (const user of userAry) {
     if (user.email === req.body.email) {
       const templateVars = { userID: req.session.userID, statusCode: 400, errorMsg: 'An account with that email address already exists' };
       res.render('error', templateVars);
     }
   }
-
   if (req.body.email === '' || password === '') {
     const templateVars = { userID: req.session.userID, statusCode: 400, errorMsg: 'Email and/or password is blank' };
     res.render('error', templateVars);
@@ -79,19 +79,20 @@ router.post('/register', (req, res) => {
 
 router.post('/logout', (req, res) => {
   req.session = null;
-  //I decided not to build this to spec.
-  //The requirement is to redirect to /urls upon logging out, but users who are not logged in and try to GET /urls are met with an error message.
-  //I think that's an unnecessary unpleasant effect for logging out, so the redirect here is to /login.
-  //Flagging because this is a "Major" requirement, but I believe it's wrong.
+  /*Build differs from spec for the following reason:
+  Spec states to redirect to /urls upon logging out; however, users who are not logged in and try to GET /urls are met with an error message.
+  To avoid unnecessary unpleasantness after logging out, the build redirects to /login. */
   res.redirect('/login');
 });
 
+/*----------Off-Site Redirect Route------------*/
 router.get('/u/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
   const longURLSplit = urlDatabase[shortURL].longURL.split('//');
   const extWebsite = longURLSplit[1].toString();
 
+  //callback used with the helper function invoked below
   const httpCallback = (input, url) => {
     if (input) {
       return res.redirect(longURL);
@@ -101,6 +102,8 @@ router.get('/u/:shortURL', (req, res) => {
     }
   };
 
+  //invoking an http.request function to validate the external website before redirecting users to it.
+  //callback renders an error to avoid timing out if a website is unresponsive.
   checkURL(extWebsite, longURL, httpCallback);
 });
 

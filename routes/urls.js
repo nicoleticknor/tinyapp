@@ -6,6 +6,8 @@ const { generateRandomString } = require('../helpers');
 const { urlsForUser } = require('../helpers');
 const { authenticateShortURL } = require('../helpers');
 
+/*-------------URL-Related Routes ------------*/
+
 router.get('/', (req, res) => {
   if (!users[req.session.userID]) {
     const templateVars = { userID: req.session.userID, statusCode: 401, errorMsg: 'Must be logged in to view Short URLs' };
@@ -22,6 +24,8 @@ router.post('/', (req, res) => {
     const templateVars = { userID: req.session.userID, statusCode: 401, errorMsg: 'Must be logged in to view Short URLs' };
     res.render('error', templateVars);
   } else {
+    //process to check whether user has included  "http://" in front of the URL submitted
+    //if not, adds the prefix and stores it to the database
     let extWebsite = null;
     const urlParsed = req.body.longURL.split('http://');
 
@@ -30,6 +34,7 @@ router.post('/', (req, res) => {
     } else {
       extWebsite = req.body.longURL;
     }
+    //guard clause to prevent storing blank URLs
     if (extWebsite === null) {
       const templateVars = { userID: req.session.userID, email: users[req.session.userID].email, statusCode: 400, errorMsg: 'Invalid URL' };
       res.render('error', templateVars);
@@ -53,6 +58,7 @@ router.get('/new', (req, res) => {
 
 router.get('/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
+  //resource should only be accessible by the user that "owns" it:
   if (!users[req.session.userID]) {
     const templateVars = { userID: req.session.userID, statusCode: 401, errorMsg: `ShortURL ${shortURL} is unauthorized` };
     res.render('error', templateVars);
@@ -69,6 +75,7 @@ router.get('/:shortURL', (req, res) => {
 });
 
 router.put('/:shortURL', (req, res) => {
+  //resource should only be accessible by the user that "owns" it:
   if (!users[req.session.userID]) {
     res.redirect('/login');
   } else {
@@ -85,6 +92,7 @@ router.put('/:shortURL', (req, res) => {
 });
 
 router.delete('/:shortURL', (req, res) => {
+  //resource should only be accessible by the user that "owns" it:
   if (!users[req.session.userID]) {
     res.redirect('/login');
   } else {
