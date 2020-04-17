@@ -4,7 +4,7 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-!["screenshot description"](https://github.com/nicoleticknor/tinyapp/blob/master/docs/Browse%20or%20Delete%20URLs.png?raw=true)
+!["screenshot description"](https://github.com/nicoleticknor/tinyapp/blob/master/docs/browse-or-delete-URLs.png)
 !["screenshot description"](https://github.com/nicoleticknor/tinyapp/blob/master/docs/create-users.png?raw=true)
 !["screenshot description"](https://github.com/nicoleticknor/tinyapp/blob/master/docs/read-and-edit-URLs.png)
 
